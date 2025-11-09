@@ -29,6 +29,12 @@ services:
     container_name: temperature-api
     ports:
       - "8081:8081"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
     networks:
       - smarthome-network
@@ -96,7 +102,7 @@ services:
       postgres:
         condition: service_healthy
       temperature-api:
-        condition: service_started
+        condition: service_healthy
       device-management-service:
         condition: service_started
       telemetry-service:

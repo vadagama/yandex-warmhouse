@@ -40,8 +40,14 @@ def publish_event(event_type: str, payload: dict):
             )
         )
         connection.close()
+    except pika.exceptions.AMQPConnectionError as e:
+        print(f"Ошибка подключения к RabbitMQ: {e}")
+        # В production здесь можно добавить retry логику или отправку в очередь для повторной попытки
+    except pika.exceptions.AMQPChannelError as e:
+        print(f"Ошибка канала RabbitMQ: {e}")
     except Exception as e:
-        print(f"Ошибка публикации события: {e}")
+        print(f"Неожиданная ошибка при публикации события в RabbitMQ: {e}")
+        # Логируем, но не прерываем выполнение основного потока
 
 @app.route('/health', methods=['GET'])
 def health():
@@ -49,12 +55,11 @@ def health():
     return jsonify({"status": "ok"}), 200
 
 @app.route('/api/v1/devices/device-types', methods=['GET'])
-@app.route('/api/v1/devices/devices/device-types', methods=['GET'])
 def get_device_types():
     """Получить список типов устройств"""
     return jsonify({"device_types": device_types}), 200
 
-@app.route('/api/v1/devices/devices', methods=['GET'])
+@app.route('/api/v1/devices', methods=['GET'])
 def get_devices():
     """Получить список устройств"""
     room_id = request.args.get('room_id')
@@ -72,7 +77,7 @@ def get_devices():
     
     return jsonify({"devices": filtered_devices, "total": len(filtered_devices)}), 200
 
-@app.route('/api/v1/devices/devices/<device_id>', methods=['GET'])
+@app.route('/api/v1/devices/<device_id>', methods=['GET'])
 def get_device(device_id):
     """Получить информацию об устройстве"""
     device = devices.get(device_id)
@@ -80,7 +85,7 @@ def get_device(device_id):
         return jsonify({"error": "Device not found", "message": f"Device {device_id} not found"}), 404
     return jsonify(device), 200
 
-@app.route('/api/v1/devices/devices', methods=['POST'])
+@app.route('/api/v1/devices', methods=['POST'])
 def register_device():
     """Зарегистрировать новое устройство"""
     data = request.json
@@ -119,7 +124,7 @@ def register_device():
     
     return jsonify(device), 201
 
-@app.route('/api/v1/devices/devices/<device_id>', methods=['PUT'])
+@app.route('/api/v1/devices/<device_id>', methods=['PUT'])
 def update_device(device_id):
     """Обновить информацию об устройстве"""
     device = devices.get(device_id)
@@ -139,7 +144,7 @@ def update_device(device_id):
     
     return jsonify(device), 200
 
-@app.route('/api/v1/devices/devices/<device_id>', methods=['DELETE'])
+@app.route('/api/v1/devices/<device_id>', methods=['DELETE'])
 def delete_device(device_id):
     """Удалить устройство"""
     if device_id not in devices:
@@ -148,7 +153,7 @@ def delete_device(device_id):
     del devices[device_id]
     return "", 204
 
-@app.route('/api/v1/devices/devices/<device_id>/status', methods=['GET'])
+@app.route('/api/v1/devices/<device_id>/status', methods=['GET'])
 def get_device_status(device_id):
     """Получить статус устройства"""
     device = devices.get(device_id)

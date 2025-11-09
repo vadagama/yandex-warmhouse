@@ -1,9 +1,5 @@
-# Project_template
-
-Это шаблон для решения проектной работы. Структура этого файла повторяет структуру заданий. Заполняйте его по мере работы над решением.
-
 # Задание 1. Анализ и планирование
-### 1. Описание функциональности монолитного приложения
+## 1. Описание функциональности монолитного приложения
 
 **Управление отоплением:**
 
@@ -23,7 +19,7 @@
 - Специалист привязывает устройство к аккаунту клиента внутри монолита и проводит первичную настройку.
 - Все изменения конфигурации фиксируются сервисной командой через административный интерфейс.
 
-### 2. Анализ архитектуры монолитного приложения
+## 2. Анализ архитектуры монолитного приложения
 
 Язык программирования: Go
 
@@ -37,7 +33,7 @@
 
 Развертывание: Требует остановки всего приложения.
 
-### 3. Определение доменов и границы контекстов
+## 3. Определение доменов и границы контекстов
 
 `Управление отоплением`
 - Контекст: операции по включению, выключению и настройке режимов работы отопительных модулей.
@@ -55,7 +51,7 @@
 - Контекст: обработка обращений пользователей, консультирование по работе системы, контроль SLA.
 - Основные сущности: обращение клиента, статус, сотрудник поддержки, база знаний.
 
-### **4. Проблемы монолитного решения**
+## **4. Проблемы монолитного решения**
 
 - Выезд специалиста — единственный способ подключить новое устройство, пользователи не могут делать это самостоятельно.
 - Любые изменения требуют развёртывания всего монолита, что вызывает простои и усложняет релизы.
@@ -64,7 +60,7 @@
 - Масштабирование возможно только вертикально, что ограничивает рост числа пользователей и устройств.
 - Команды разработки, QA и поддержки работают с одной кодовой базой и общим циклом релизов, что замедляет внедрение новых функций.
 
-### 5. Визуализация контекста системы — диаграмма С4
+## 5. Визуализация контекста системы — диаграмма С4
 
 ![c4_context_as_is.png](schemas/c4_context_as_is.png)
 
@@ -80,37 +76,36 @@
 - Диаграммы компонентов Heating Control Service
 - Диаграмма кода Heating Control Service - Command Service Component
 
-**Диаграмма контейнеров (Containers)**
+## Диаграмма контейнеров (Containers) целевого решения
 
 ![c4_container_to_be.png](schemas/c4_container_to_be.png)
 
 Диаграмма в формате plantUML:
 [c4_container_to_be.puml](schemas/c4_container_to_be.puml)
 
-**Диаграммы компонентов (Components)**
+## Диаграммы компонентов (Components)
 
-**Device Management Service:**
+### Device Management Service
 
 ![c4_component_device_management_service.png](schemas/c4_component_device_management_service.png)
 
 Диаграмма в формате plantUML:
 [c4_component_device_management_service.puml](schemas/c4_component_device_management_service.puml)
 
-**Telemetry Service:**
+### Telemetry Service
 ![c4_component_telemetry_service.png](schemas/c4_component_telemetry_service.png)
 
 Диаграмма в формате plantUML:
 [c4_component_telemetry_service.puml](schemas/c4_component_telemetry_service.puml)
 
-**Heating Control Service:**
+### Heating Control Service
 ![c4_component_heating_control_service.png](schemas/c4_component_heating_control_service.png)
 
 Диаграмма в формате plantUML:
 [c4_component_heating_control_service.puml](schemas/c4_component_heating_control_service.puml)
 
-**Диаграмма кода (Code)**
+### Диаграмма Heating Control Service - Command Service Component (Code)
 
-**Пример: Heating Control Service - Command Service Component**
 ![c4_code_command_service_component.png](schemas/c4_code_command_service_component.png)
 
 Диаграмма в формате plantUML:
@@ -144,7 +139,7 @@ ER-диаграмма отражает ключевые сущности сис�
 
 # Задание 4. Создание и документирование API
 
-### 1. Тип API
+## 1. Тип API
 
 Для взаимодействия микросервисов в экосистеме "Тёплый дом" используется гибридный подход, сочетающий два типа API:
 
@@ -167,37 +162,31 @@ ER-диаграмма отражает ключевые сущности сис�
 4. **Масштабируемость**: Каждый тип взаимодействия может масштабироваться независимо
 5. **Стандартизация**: Использование OpenAPI и AsyncAPI обеспечивает единообразие документации и упрощает интеграцию
 
-### 2. Документация API
+## 2. Документация API
 
 Документация API для всех микросервисов представлена в формате OpenAPI 3.0 и AsyncAPI 2.0:
 
-**REST API (OpenAPI 3.0):**
+### REST API (OpenAPI 3.0)
 
 - **User Service API** — управление пользователями и аутентификация
   - [openapi-user-service.yaml](schemas/openapi-user-service.yaml)
-  - Интерактивная документация: `/api/v1/users/docs` (Swagger UI)
 
 - **Device Management Service API** — регистрация и управление устройствами
   - [openapi-device-service.yaml](schemas/openapi-device-service.yaml)
-  - Интерактивная документация: `/api/v1/devices/docs` (Swagger UI)
 
 - **Telemetry Service API** — получение телеметрических данных
   - [openapi-telemetry-service.yaml](schemas/openapi-telemetry-service.yaml)
-  - Интерактивная документация: `/api/v1/telemetry/docs` (Swagger UI)
 
 - **Heating Control Service API** — управление отоплением
   - [openapi-heating-service.yaml](schemas/openapi-heating-service.yaml)
-  - Интерактивная документация: `/api/v1/heating/docs` (Swagger UI)
 
 - **Lighting Control Service API** — управление освещением
   - [openapi-lighting-service.yaml](schemas/openapi-lighting-service.yaml)
-  - Интерактивная документация: `/api/v1/lighting/docs` (Swagger UI)
 
 - **Gate Control Service API** — управление автоматическими воротами
   - [openapi-gate-service.yaml](schemas/openapi-gate-service.yaml)
-  - Интерактивная документация: `/api/v1/gates/docs` (Swagger UI)
 
-**Асинхронные события (AsyncAPI 2.0):**
+### Асинхронные события (AsyncAPI 2.0)
 
 - **Message Broker Events** — события системы через RabbitMQ
   - [asyncapi-events.yaml](schemas/asyncapi-events.yaml)
@@ -215,13 +204,11 @@ ER-диаграмма отражает ключевые сущности сис�
 
 3. Обновлен docker-compose.yml
 
-# **Задание 6. Разработка MVP**
+# Задание 6. Разработка MVP
 
 Разработаны несколько новых микросервисов на стеке Python/Flask и Javascript/Express и обеспечена их интеграция с существующим монолитом для плавного перехода к микросервисной архитектуре. 
 
-### **Реализация**
-
-#### **Созданные микросервисы**
+## Реализация
 
 1. **Device Management Service** (Python/Flask)
    - Расположение: `apps/microservices/device-management-service/`
@@ -242,22 +229,18 @@ ER-диаграмма отражает ключевые сущности сис�
      - Получение последних показаний устройства
      - Получение истории показаний
      - Получение показаний по комнате
-     - Получение агрегированной статистики
      - Внутренний endpoint для приема телеметрии
 
-#### **Принципы взаимодействия**
+## Принципы взаимодействия
 
 **1. Синхронное взаимодействие через REST API:**
-   - Монолит и клиентские приложения взаимодействуют с микросервисами через HTTP REST API
+   - Монолит и клиентские приложения взаимодействуют с микросервисами через REST API
    - Монолит может вызывать микросервисы напрямую для получения данных или выполнения операций
    - Пример: Монолит вызывает Device Management Service для регистрации нового датчика
 
 **2. Асинхронное взаимодействие через RabbitMQ:**
    - Микросервисы публикуют события в RabbitMQ при выполнении операций
    - Другие микросервисы подписываются на интересующие их события
-   - Примеры событий:
-     - `device.registered` - публикуется Device Management Service при регистрации устройства
-     - `telemetry.received` - публикуется Telemetry Service при получении телеметрии
    - Преимущества: развязка сервисов, отказоустойчивость, масштабируемость
 
 **3. Постепенная миграция функциональности:**
@@ -268,7 +251,5 @@ ER-диаграмма отражает ключевые сущности сис�
 
 **4. Интеграция с существующим монолитом:**
    - Монолит получает переменные окружения для URL микросервисов:
-     - `DEVICE_MANAGEMENT_SERVICE_URL` - адрес Device Management Service
-     - `TELEMETRY_SERVICE_URL` - адрес Telemetry Service
    - Монолит может вызывать микросервисы для расширения функциональности
    - Монолит может отправлять телеметрию в Telemetry Service через внутренний endpoint

@@ -81,6 +81,33 @@ def get_temperature():
     return jsonify(response), 200
 
 
+@app.route('/temperature/<sensor_id>', methods=['GET'])
+def get_temperature_by_sensor_id(sensor_id):
+    """
+    Эндпоинт для получения температуры по sensor ID
+    Параметры:
+    - sensor_id: идентификатор датчика (1, 2, 3)
+    """
+    location = get_location_from_sensor_id(sensor_id)
+    
+    # Генерируем случайное значение температуры
+    temperature_value = generate_random_temperature()
+    
+    # Формируем ответ в формате, ожидаемом Go-приложением
+    response = {
+        "value": temperature_value,
+        "unit": "celsius",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "location": location,
+        "status": "active",
+        "sensor_id": sensor_id,
+        "sensor_type": "temperature",
+        "description": f"Temperature sensor reading for {location}"
+    }
+    
+    return jsonify(response), 200
+
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check эндпоинт"""
