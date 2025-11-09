@@ -1,0 +1,294 @@
+openapi: 3.0.3
+info:
+  title: Telemetry Service API
+  description: API для получения телеметрических данных с устройств в экосистеме "Тёплый дом"
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@warmhouse.ru
+
+servers:
+  - url: http://api.warmhouse.ru/api/v1/telemetry
+    description: Production server
+  - url: http://localhost:8083/api/v1/telemetry
+    description: Development server
+
+tags:
+  - name: Telemetry
+    description: Получение телеметрических данных
+  - name: Aggregation
+    description: Агрегированные данные
+
+paths:
+  /devices/{device_id}/metrics:
+    get:
+      tags:
+        - Telemetry
+      summary: Получить последние показания устройства
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: metric_type
+          in: query
+          schema:
+            type: string
+          description: Тип метрики (temperature, humidity, etc.)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+      responses:
+        '200':
+          description: Список показаний
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  device_id:
+                    type: string
+                    format: uuid
+                  metrics:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TelemetryResponse'
+
+  /devices/{device_id}/metrics/history:
+    get:
+      tags:
+        - Telemetry
+      summary: Получить историю показаний устройства
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: metric_type
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Начало периода
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Конец периода
+        - name: interval
+          in: query
+          schema:
+            type: string
+            enum: [1m, 5m, 15m, 1h, 1d]
+            default: 1h
+          description: Интервал агрегации
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+      responses:
+        '200':
+          description: История показаний
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  device_id:
+                    type: string
+                    format: uuid
+                  metric_type:
+                    type: string
+                  data_points:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TelemetryResponse'
+
+  /rooms/{room_id}/metrics:
+    get:
+      tags:
+        - Telemetry
+      summary: Получить показания всех устройств в комнате
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: room_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: metric_type
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Показания устройств в комнате
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  room_id:
+                    type: string
+                    format: uuid
+                  devices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DeviceTelemetryResponse'
+
+  /aggregated/stats:
+    get:
+      tags:
+        - Aggregation
+      summary: Получить агрегированную статистику
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_ids
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+          description: Список ID устройств
+        - name: metric_type
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: aggregation
+          in: query
+          schema:
+            type: string
+            enum: [avg, min, max, sum, count]
+            default: avg
+      responses:
+        '200':
+          description: Агрегированная статистика
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AggregatedStatsResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TelemetryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        device_id:
+          type: string
+          format: uuid
+        metric_type:
+          type: string
+          example: "temperature"
+        value:
+          type: number
+          format: float
+          example: 22.5
+        unit:
+          type: string
+          example: "°C"
+        timestamp:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+
+    DeviceTelemetryResponse:
+      type: object
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        device_name:
+          type: string
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/TelemetryResponse'
+
+    AggregatedStatsResponse:
+      type: object
+      properties:
+        metric_type:
+          type: string
+        aggregation:
+          type: string
+        value:
+          type: number
+        unit:
+          type: string
+        device_count:
+          type: integer
+        period:
+          type: object
+          properties:
+            from:
+              type: string
+              format: date-time
+            to:
+              type: string
+              format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+

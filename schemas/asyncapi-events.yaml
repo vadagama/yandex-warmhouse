@@ -1,0 +1,327 @@
+asyncapi: 2.6.0
+info:
+  title: Smart Home Events API
+  description: Асинхронные события экосистемы "Тёплый дом" через RabbitMQ
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@warmhouse.ru
+
+servers:
+  production:
+    url: rabbitmq.warmhouse.ru:5672
+    protocol: amqp
+    description: Production RabbitMQ server
+  development:
+    url: localhost:5672
+    protocol: amqp
+    description: Development RabbitMQ server
+
+defaultContentType: application/json
+
+channels:
+  device.registered:
+    description: Событие регистрации нового устройства
+    publish:
+      message:
+        $ref: '#/components/messages/DeviceRegistered'
+    subscribe:
+      message:
+        $ref: '#/components/messages/DeviceRegistered'
+
+  device.status.changed:
+    description: Событие изменения статуса устройства
+    publish:
+      message:
+        $ref: '#/components/messages/DeviceStatusChanged'
+    subscribe:
+      message:
+        $ref: '#/components/messages/DeviceStatusChanged'
+
+  telemetry.received:
+    description: Событие получения телеметрических данных
+    publish:
+      message:
+        $ref: '#/components/messages/TelemetryReceived'
+    subscribe:
+      message:
+        $ref: '#/components/messages/TelemetryReceived'
+
+  command.sent:
+    description: Событие отправки команды управления
+    publish:
+      message:
+        $ref: '#/components/messages/CommandSent'
+    subscribe:
+      message:
+        $ref: '#/components/messages/CommandSent'
+
+  command.executed:
+    description: Событие выполнения команды
+    publish:
+      message:
+        $ref: '#/components/messages/CommandExecuted'
+    subscribe:
+      message:
+        $ref: '#/components/messages/CommandExecuted'
+
+  scenario.triggered:
+    description: Событие активации сценария
+    publish:
+      message:
+        $ref: '#/components/messages/ScenarioTriggered'
+    subscribe:
+      message:
+        $ref: '#/components/messages/ScenarioTriggered'
+
+  notification.send:
+    description: Событие отправки уведомления
+    publish:
+      message:
+        $ref: '#/components/messages/NotificationSend'
+    subscribe:
+      message:
+        $ref: '#/components/messages/NotificationSend'
+
+components:
+  messages:
+    DeviceRegistered:
+      name: DeviceRegistered
+      title: Устройство зарегистрировано
+      summary: Событие публикуется при успешной регистрации устройства
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/DeviceRegisteredPayload'
+      examples:
+        - payload:
+            device_id: "550e8400-e29b-41d4-a716-446655440000"
+            user_id: "660e8400-e29b-41d4-a716-446655440001"
+            device_type: "temperature_sensor"
+            serial_number: "SN123456789"
+            registered_at: "2024-01-15T10:30:00Z"
+
+    DeviceStatusChanged:
+      name: DeviceStatusChanged
+      title: Статус устройства изменен
+      summary: Событие публикуется при изменении статуса устройства
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/DeviceStatusChangedPayload'
+
+    TelemetryReceived:
+      name: TelemetryReceived
+      title: Получена телеметрия
+      summary: Событие публикуется при получении телеметрических данных
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/TelemetryReceivedPayload'
+
+    CommandSent:
+      name: CommandSent
+      title: Команда отправлена
+      summary: Событие публикуется при отправке команды управления
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CommandSentPayload'
+
+    CommandExecuted:
+      name: CommandExecuted
+      title: Команда выполнена
+      summary: Событие публикуется при выполнении команды устройством
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CommandExecutedPayload'
+
+    ScenarioTriggered:
+      name: ScenarioTriggered
+      title: Сценарий активирован
+      summary: Событие публикуется при активации сценария
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ScenarioTriggeredPayload'
+
+    NotificationSend:
+      name: NotificationSend
+      title: Отправка уведомления
+      summary: Событие для отправки уведомления пользователю
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/NotificationSendPayload'
+
+  schemas:
+    DeviceRegisteredPayload:
+      type: object
+      required:
+        - device_id
+        - user_id
+        - device_type
+        - serial_number
+        - registered_at
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        device_type:
+          type: string
+        serial_number:
+          type: string
+        name:
+          type: string
+        room_id:
+          type: string
+          format: uuid
+        registered_at:
+          type: string
+          format: date-time
+
+    DeviceStatusChangedPayload:
+      type: object
+      required:
+        - device_id
+        - status
+        - timestamp
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [online, offline, error]
+        previous_status:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+
+    TelemetryReceivedPayload:
+      type: object
+      required:
+        - device_id
+        - metric_type
+        - value
+        - timestamp
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        metric_type:
+          type: string
+          example: "temperature"
+        value:
+          type: number
+          format: float
+        unit:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+
+    CommandSentPayload:
+      type: object
+      required:
+        - command_id
+        - device_id
+        - command_type
+        - timestamp
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        device_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        command_type:
+          type: string
+        command_data:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+
+    CommandExecutedPayload:
+      type: object
+      required:
+        - command_id
+        - device_id
+        - status
+        - timestamp
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        device_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [executed, failed, timeout]
+        execution_time:
+          type: number
+          format: float
+          description: Время выполнения в секундах
+        error_message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ScenarioTriggeredPayload:
+      type: object
+      required:
+        - scenario_id
+        - trigger_type
+        - timestamp
+      properties:
+        scenario_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        trigger_type:
+          type: string
+          enum: [schedule, temperature, manual]
+        trigger_config:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+
+    NotificationSendPayload:
+      type: object
+      required:
+        - user_id
+        - notification_type
+        - message
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        notification_type:
+          type: string
+          enum: [email, sms, push, in_app]
+        subject:
+          type: string
+        message:
+          type: string
+        priority:
+          type: string
+          enum: [low, normal, high, urgent]
+        metadata:
+          type: object
+          additionalProperties: true
+

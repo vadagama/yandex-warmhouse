@@ -1,0 +1,317 @@
+openapi: 3.0.3
+info:
+  title: Gate Control Service API
+  description: API для управления автоматическими воротами в экосистеме "Тёплый дом"
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@warmhouse.ru
+
+servers:
+  - url: http://api.warmhouse.ru/api/v1/gates
+    description: Production server
+  - url: http://localhost:8080/api/v1/gates
+    description: Development server
+
+tags:
+  - name: Control
+    description: Управление воротами
+  - name: Access
+    description: Управление доступом
+
+paths:
+  /devices/{device_id}/control:
+    post:
+      tags:
+        - Control
+      summary: Отправить команду управления воротами
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GateCommandRequest'
+      responses:
+        '202':
+          description: Команда принята к выполнению
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResponse'
+        '400':
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /devices/{device_id}/status:
+    get:
+      tags:
+        - Control
+      summary: Получить текущий статус ворот
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Статус ворот
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GateStatusResponse'
+
+  /devices/{device_id}/access-logs:
+    get:
+      tags:
+        - Access
+      summary: Получить журнал доступа
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+      responses:
+        '200':
+          description: Журнал доступа
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AccessLogResponse'
+
+  /devices/{device_id}/access-codes:
+    get:
+      tags:
+        - Access
+      summary: Получить список кодов доступа
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Список кодов доступа
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_codes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AccessCodeResponse'
+
+    post:
+      tags:
+        - Access
+      summary: Создать новый код доступа
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccessCodeRequest'
+      responses:
+        '201':
+          description: Код доступа создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessCodeResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    GateCommandRequest:
+      type: object
+      required:
+        - command_type
+      properties:
+        command_type:
+          type: string
+          enum: [open, close, stop, toggle]
+        reason:
+          type: string
+          description: Причина открытия/закрытия
+
+    CommandResponse:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        device_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, sent, executed, failed]
+        sent_at:
+          type: string
+          format: date-time
+
+    GateStatusResponse:
+      type: object
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        state:
+          type: string
+          enum: [open, closed, opening, closing, stopped, error]
+        position:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Позиция ворот в процентах
+        last_operation:
+          type: string
+          enum: [open, close, stop]
+        last_operation_time:
+          type: string
+          format: date-time
+        last_updated:
+          type: string
+          format: date-time
+
+    AccessLogResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        device_id:
+          type: string
+          format: uuid
+        access_type:
+          type: string
+          enum: [code, remote, manual]
+        user_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        success:
+          type: boolean
+
+    CreateAccessCodeRequest:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+          minLength: 4
+          maxLength: 10
+          description: Код доступа
+        name:
+          type: string
+          description: Название кода (например, "Гость 1")
+        expires_at:
+          type: string
+          format: date-time
+          description: Дата истечения кода
+        max_uses:
+          type: integer
+          description: Максимальное количество использований
+
+    AccessCodeResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        is_active:
+          type: boolean
+        expires_at:
+          type: string
+          format: date-time
+        uses_count:
+          type: integer
+        max_uses:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+

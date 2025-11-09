@@ -1,0 +1,15 @@
+{
+  "name": "telemetry-service",
+  "version": "1.0.0",
+  "description": "Telemetry Service для управления телеметрией",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "amqplib": "^0.10.3",
+    "uuid": "^9.0.1"
+  }
+}
+

@@ -1,0 +1,256 @@
+openapi: 3.0.3
+info:
+  title: Lighting Control Service API
+  description: API для управления освещением в экосистеме "Тёплый дом"
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@warmhouse.ru
+
+servers:
+  - url: http://api.warmhouse.ru/api/v1/lighting
+    description: Production server
+  - url: http://localhost:8080/api/v1/lighting
+    description: Development server
+
+tags:
+  - name: Control
+    description: Управление освещением
+  - name: Scenarios
+    description: Сценарии освещения
+
+paths:
+  /devices/{device_id}/control:
+    post:
+      tags:
+        - Control
+      summary: Отправить команду управления освещением
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightingCommandRequest'
+      responses:
+        '202':
+          description: Команда принята к выполнению
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResponse'
+
+  /devices/{device_id}/status:
+    get:
+      tags:
+        - Control
+      summary: Получить текущий статус освещения
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Статус освещения
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightingStatusResponse'
+
+  /scenarios:
+    get:
+      tags:
+        - Scenarios
+      summary: Получить список сценариев освещения
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Список сценариев
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scenarios:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LightingScenarioResponse'
+
+    post:
+      tags:
+        - Scenarios
+      summary: Создать новый сценарий освещения
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLightingScenarioRequest'
+      responses:
+        '201':
+          description: Сценарий создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightingScenarioResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LightingCommandRequest:
+      type: object
+      required:
+        - command_type
+      properties:
+        command_type:
+          type: string
+          enum: [turn_on, turn_off, set_brightness, set_color, set_mode]
+        brightness:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Яркость в процентах
+        color:
+          type: object
+          properties:
+            r:
+              type: integer
+              minimum: 0
+              maximum: 255
+            g:
+              type: integer
+              minimum: 0
+              maximum: 255
+            b:
+              type: integer
+              minimum: 0
+              maximum: 255
+          description: RGB цвет
+        mode:
+          type: string
+          enum: [normal, reading, night, party]
+          description: Режим освещения
+
+    CommandResponse:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        device_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, sent, executed, failed]
+        sent_at:
+          type: string
+          format: date-time
+
+    LightingStatusResponse:
+      type: object
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        is_on:
+          type: boolean
+        brightness:
+          type: integer
+          minimum: 0
+          maximum: 100
+        color:
+          type: object
+          properties:
+            r:
+              type: integer
+            g:
+              type: integer
+            b:
+              type: integer
+        mode:
+          type: string
+        last_updated:
+          type: string
+          format: date-time
+
+    CreateLightingScenarioRequest:
+      type: object
+      required:
+        - name
+        - trigger_type
+        - devices
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        trigger_type:
+          type: string
+          enum: [schedule, motion, manual]
+        trigger_config:
+          type: object
+          additionalProperties: true
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightingScenarioDeviceConfig'
+
+    LightingScenarioDeviceConfig:
+      type: object
+      required:
+        - device_id
+        - action
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+        action_params:
+          type: object
+          additionalProperties: true
+
+    LightingScenarioResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        trigger_type:
+          type: string
+        is_active:
+          type: boolean
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/LightingScenarioDeviceConfig'
+        created_at:
+          type: string
+          format: date-time
+

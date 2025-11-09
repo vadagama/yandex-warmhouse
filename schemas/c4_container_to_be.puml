@@ -1,0 +1,68 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user, "Пользователь", "Владелец дома, управляет устройствами через веб-интерфейс")
+Person(tech, "Специалист по установке", "Выездной сотрудник, настраивающий устройства")
+Person(support, "Сотрудник поддержки", "Обрабатывает обращения клиентов")
+
+System_Boundary(system, "Экосистема 'Тёплый дом'") {
+    Container(web, "Web Frontend", "React", "Веб-интерфейс для пользователей")
+    Container(admin, "Admin Frontend", "React", "Административный интерфейс для специалистов")
+    Container(gateway, "API Gateway", "Kong/Nginx", "Единая точка входа, маршрутизация запросов")
+
+    Container(userService, "User Service", "Go", "Управление пользователями и аутентификация")
+    Container(deviceService, "Device Management Service", "Java", "Регистрация и управление устройствами")
+    Container(telemetryService, "Telemetry Service", "Python", "Сбор и хранение телеметрии")
+    Container(heatingService, "Heating Control Service", "Go", "Управление отоплением")
+    Container(lightingService, "Lighting Control Service", "Node.js", "Управление освещением")
+    Container(gateService, "Gate Control Service", "Go", "Управление автоматическими воротами")
+
+    ContainerDb(userDb, "User Database", "PostgreSQL", "Хранит данные пользователей")
+    ContainerDb(deviceDb, "Device Database", "PostgreSQL", "Хранит информацию об устройствах")
+    ContainerDb(telemetryDb, "Telemetry Database", "TimescaleDB", "Хранит историю телеметрии")
+    ContainerDb(heatingDb, "Heating Database", "PostgreSQL", "Хранит настройки отопления")
+    ContainerDb(lightingDb, "Lighting Database", "PostgreSQL", "Хранит настройки освещения")
+    ContainerDb(gateDb, "Gate Database", "PostgreSQL", "Хранит настройки ворот")
+
+    Container(messageBroker, "Message Broker", "RabbitMQ", "Асинхронное взаимодействие между сервисами")
+}
+
+System_Ext(devices, "Умные устройства", "Датчики, реле, модули управления в домах клиентов")
+System_Ext(partnerDevices, "Устройства партнёров", "Сторонние устройства по стандартным протоколам")
+
+Rel(user, web, "Использует", "HTTPS")
+Rel(tech, admin, "Использует", "HTTPS")
+Rel(support, admin, "Использует", "HTTPS")
+
+Rel(web, gateway, "Отправляет запросы", "HTTPS/REST")
+Rel(admin, gateway, "Отправляет запросы", "HTTPS/REST")
+
+Rel(gateway, userService, "Маршрутизирует запросы", "HTTP/REST")
+Rel(gateway, deviceService, "Маршрутизирует запросы", "HTTP/REST")
+Rel(gateway, telemetryService, "Маршрутизирует запросы", "HTTP/REST")
+Rel(gateway, heatingService, "Маршрутизирует запросы", "HTTP/REST")
+Rel(gateway, lightingService, "Маршрутизирует запросы", "HTTP/REST")
+Rel(gateway, gateService, "Маршрутизирует запросы", "HTTP/REST")
+
+Rel(userService, userDb, "Читает и записывает", "SQL")
+Rel(deviceService, deviceDb, "Читает и записывает", "SQL")
+Rel(telemetryService, telemetryDb, "Читает и записывает", "SQL")
+Rel(heatingService, heatingDb, "Читает и записывает", "SQL")
+Rel(lightingService, lightingDb, "Читает и записывает", "SQL")
+Rel(gateService, gateDb, "Читает и записывает", "SQL")
+
+Rel(deviceService, messageBroker, "Публикует события", "AMQP")
+Rel(telemetryService, messageBroker, "Публикует и подписывается", "AMQP")
+Rel(heatingService, messageBroker, "Публикует и подписывается", "AMQP")
+Rel(lightingService, messageBroker, "Публикует и подписывается", "AMQP")
+Rel(gateService, messageBroker, "Публикует и подписывается", "AMQP")
+
+Rel(heatingService, devices, "Отправляет команды, получает данные", "MQTT/HTTP")
+Rel(lightingService, devices, "Отправляет команды", "MQTT/HTTP")
+Rel(gateService, devices, "Отправляет команды", "MQTT/HTTP")
+Rel(telemetryService, devices, "Получает телеметрию", "MQTT/HTTP")
+Rel(deviceService, devices, "Регистрирует и настраивает", "MQTT/HTTP")
+
+Rel(deviceService, partnerDevices, "Подключает по стандартным протоколам", "MQTT/Zigbee/Z-Wave")
+
+@enduml

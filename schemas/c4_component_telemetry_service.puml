@@ -1,0 +1,27 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container_Boundary(telemetryService, "Telemetry Service") {
+    Component(telemetryApi, "Telemetry API", "FastAPI REST Controller", "REST API для получения телеметрии")
+    Component(telemetryController, "Telemetry Controller", "Python", "Обработка запросов телеметрии")
+    Component(collectorService, "Data Collector", "Python", "Сбор данных с устройств")
+    Component(aggregationService, "Aggregation Service", "Python", "Агрегация и обработка данных")
+    Component(telemetryRepository, "Telemetry Repository", "Python", "Доступ к данным телеметрии")
+    
+    ComponentDb(telemetryDb, "Telemetry Database", "TimescaleDB", "Хранит историю телеметрии")
+}
+
+System_Ext(apiGateway, "API Gateway", "Маршрутизация запросов")
+System_Ext(messageBroker, "Message Broker", "Асинхронные события")
+System_Ext(devices, "Умные устройства", "Физические устройства")
+
+Rel(apiGateway, telemetryApi, "HTTP/REST")
+Rel(telemetryApi, telemetryController, "Использует")
+Rel(telemetryController, aggregationService, "Использует")
+Rel(telemetryController, telemetryRepository, "Использует")
+Rel(telemetryRepository, telemetryDb, "SQL")
+Rel(collectorService, messageBroker, "Подписывается на события", "AMQP")
+Rel(collectorService, devices, "Получает данные", "MQTT/HTTP")
+Rel(collectorService, telemetryRepository, "Сохраняет данные")
+
+@enduml

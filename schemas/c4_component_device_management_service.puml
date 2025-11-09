@@ -1,0 +1,27 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container_Boundary(deviceService, "Device Management Service") {
+    Component(deviceApi, "Device API", "Spring Boot REST Controller", "REST API для управления устройствами")
+    Component(deviceController, "Device Controller", "Java", "Обработка бизнес-логики устройств")
+    Component(registrationService, "Registration Service", "Java", "Регистрация новых устройств")
+    Component(protocolAdapter, "Protocol Adapter", "Java", "Адаптация различных протоколов устройств")
+    Component(deviceRepository, "Device Repository", "Java", "Доступ к данным устройств")
+
+    ComponentDb(deviceDb, "Device Database", "PostgreSQL", "Хранит информацию об устройствах")
+}
+
+System_Ext(apiGateway, "API Gateway", "Маршрутизация запросов")
+System_Ext(messageBroker, "Message Broker", "Асинхронные события")
+System_Ext(devices, "Умные устройства", "Физические устройства")
+
+Rel(apiGateway, deviceApi, "HTTP/REST")
+Rel(deviceApi, deviceController, "Использует")
+Rel(deviceController, registrationService, "Использует")
+Rel(deviceController, protocolAdapter, "Использует")
+Rel(deviceController, deviceRepository, "Использует")
+Rel(deviceRepository, deviceDb, "SQL")
+Rel(deviceController, messageBroker, "Публикует события", "AMQP")
+Rel(protocolAdapter, devices, "Взаимодействует", "MQTT/HTTP")
+
+@enduml
