@@ -1,0 +1,388 @@
+openapi: 3.0.3
+info:
+  title: Device Management Service API
+  description: API для регистрации и управления устройствами в экосистеме "Тёплый дом"
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@warmhouse.ru
+
+servers:
+  - url: http://api.warmhouse.ru/api/v1/devices
+    description: Production server
+  - url: http://localhost:8080/api/v1/devices
+    description: Development server
+
+tags:
+  - name: Devices
+    description: Управление устройствами
+  - name: Device Types
+    description: Типы устройств
+  - name: Registration
+    description: Регистрация устройств
+
+paths:
+  /devices:
+    get:
+      tags:
+        - Devices
+      summary: Получить список устройств пользователя
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: room_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Фильтр по комнате
+        - name: device_type_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Фильтр по типу устройства
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive, offline]
+          description: Фильтр по статусу
+      responses:
+        '200':
+          description: Список устройств
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  devices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DeviceResponse'
+                  total:
+                    type: integer
+
+    post:
+      tags:
+        - Devices
+      summary: Зарегистрировать новое устройство
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterDeviceRequest'
+      responses:
+        '201':
+          description: Устройство успешно зарегистрировано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceResponse'
+        '400':
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /devices/{device_id}:
+    get:
+      tags:
+        - Devices
+      summary: Получить информацию об устройстве
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Информация об устройстве
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceResponse'
+        '404':
+          description: Ресурс не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - Devices
+      summary: Обновить информацию об устройстве
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDeviceRequest'
+      responses:
+        '200':
+          description: Информация обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceResponse'
+
+    delete:
+      tags:
+        - Devices
+      summary: Удалить устройство
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Устройство удалено
+        '404':
+          description: Ресурс не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /devices/{device_id}/status:
+    get:
+      tags:
+        - Devices
+      summary: Получить статус устройства
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Статус устройства
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceStatusResponse'
+
+  /device-types:
+    get:
+      tags:
+        - Device Types
+      summary: Получить список типов устройств
+      responses:
+        '200':
+          description: Список типов устройств
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  device_types:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DeviceTypeResponse'
+
+  /register:
+    post:
+      tags:
+        - Registration
+      summary: Самостоятельная регистрация устройства пользователем
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SelfRegisterDeviceRequest'
+      responses:
+        '201':
+          description: Устройство зарегистрировано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterDeviceRequest:
+      type: object
+      required:
+        - serial_number
+        - device_type_id
+        - name
+      properties:
+        serial_number:
+          type: string
+          example: "SN123456789"
+        device_type_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Датчик температуры в гостиной"
+        room_id:
+          type: string
+          format: uuid
+        ip_address:
+          type: string
+          format: ipv4
+        mac_address:
+          type: string
+          pattern: '^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$'
+
+    SelfRegisterDeviceRequest:
+      type: object
+      required:
+        - serial_number
+        - device_type_id
+        - name
+        - pairing_code
+      properties:
+        serial_number:
+          type: string
+        device_type_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        room_id:
+          type: string
+          format: uuid
+        pairing_code:
+          type: string
+          description: Код для сопряжения устройства
+
+    UpdateDeviceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        room_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [active, inactive]
+
+    DeviceResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        serial_number:
+          type: string
+        name:
+          type: string
+        device_type:
+          $ref: '#/components/schemas/DeviceTypeResponse'
+        room_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [active, inactive, offline]
+        ip_address:
+          type: string
+        mac_address:
+          type: string
+        firmware_version:
+          type: string
+        registered_at:
+          type: string
+          format: date-time
+        last_seen_at:
+          type: string
+          format: date-time
+
+    DeviceTypeResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Датчик температуры"
+        category:
+          type: string
+          example: "sensor"
+        protocol:
+          type: string
+          example: "MQTT"
+        description:
+          type: string
+
+    DeviceStatusResponse:
+      type: object
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [online, offline, error]
+        last_seen:
+          type: string
+          format: date-time
+        battery_level:
+          type: integer
+          minimum: 0
+          maximum: 100
+        signal_strength:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+

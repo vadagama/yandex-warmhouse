@@ -1,0 +1,399 @@
+openapi: 3.0.3
+info:
+  title: Heating Control Service API
+  description: API для управления отоплением в экосистеме "Тёплый дом"
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@warmhouse.ru
+
+servers:
+  - url: http://api.warmhouse.ru/api/v1/heating
+    description: Production server
+  - url: http://localhost:8080/api/v1/heating
+    description: Development server
+
+tags:
+  - name: Control
+    description: Управление отоплением
+  - name: Scenarios
+    description: Сценарии отопления
+  - name: Status
+    description: Статус отопления
+
+paths:
+  /devices/{device_id}/control:
+    post:
+      tags:
+        - Control
+      summary: Отправить команду управления отоплением
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HeatingCommandRequest'
+      responses:
+        '202':
+          description: Команда принята к выполнению
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResponse'
+        '400':
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Ресурс не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /devices/{device_id}/status:
+    get:
+      tags:
+        - Status
+      summary: Получить текущий статус отопления
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Статус отопления
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeatingStatusResponse'
+
+  /scenarios:
+    get:
+      tags:
+        - Scenarios
+      summary: Получить список сценариев отопления
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Список сценариев
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scenarios:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ScenarioResponse'
+
+    post:
+      tags:
+        - Scenarios
+      summary: Создать новый сценарий отопления
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateScenarioRequest'
+      responses:
+        '201':
+          description: Сценарий создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScenarioResponse'
+
+  /scenarios/{scenario_id}:
+    get:
+      tags:
+        - Scenarios
+      summary: Получить информацию о сценарии
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: scenario_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Информация о сценарии
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScenarioResponse'
+
+    put:
+      tags:
+        - Scenarios
+      summary: Обновить сценарий
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: scenario_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateScenarioRequest'
+      responses:
+        '200':
+          description: Сценарий обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScenarioResponse'
+
+    delete:
+      tags:
+        - Scenarios
+      summary: Удалить сценарий
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: scenario_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Сценарий удален
+
+  /scenarios/{scenario_id}/activate:
+    post:
+      tags:
+        - Scenarios
+      summary: Активировать сценарий
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: scenario_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Сценарий активирован
+
+  /scenarios/{scenario_id}/deactivate:
+    post:
+      tags:
+        - Scenarios
+      summary: Деактивировать сценарий
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: scenario_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Сценарий деактивирован
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HeatingCommandRequest:
+      type: object
+      required:
+        - command_type
+      properties:
+        command_type:
+          type: string
+          enum: [turn_on, turn_off, set_temperature, set_mode]
+        temperature:
+          type: number
+          format: float
+          minimum: 10
+          maximum: 30
+          description: Целевая температура (для set_temperature)
+        mode:
+          type: string
+          enum: [auto, manual, eco, comfort]
+          description: Режим работы (для set_mode)
+
+    CommandResponse:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        device_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, sent, executed, failed]
+        sent_at:
+          type: string
+          format: date-time
+
+    HeatingStatusResponse:
+      type: object
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        is_on:
+          type: boolean
+        current_temperature:
+          type: number
+          format: float
+        target_temperature:
+          type: number
+          format: float
+        mode:
+          type: string
+          enum: [auto, manual, eco, comfort]
+        power_level:
+          type: integer
+          minimum: 0
+          maximum: 100
+        last_updated:
+          type: string
+          format: date-time
+
+    CreateScenarioRequest:
+      type: object
+      required:
+        - name
+        - trigger_type
+        - devices
+      properties:
+        name:
+          type: string
+          example: "Утренний прогрев"
+        description:
+          type: string
+        trigger_type:
+          type: string
+          enum: [schedule, temperature, manual]
+        trigger_config:
+          type: object
+          additionalProperties: true
+          description: Конфигурация триггера (расписание, условия температуры и т.д.)
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScenarioDeviceConfig'
+
+    UpdateScenarioRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        is_active:
+          type: boolean
+        trigger_config:
+          type: object
+          additionalProperties: true
+
+    ScenarioDeviceConfig:
+      type: object
+      required:
+        - device_id
+        - action
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [turn_on, turn_off, set_temperature, set_mode]
+        action_params:
+          type: object
+          additionalProperties: true
+
+    ScenarioResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        trigger_type:
+          type: string
+        trigger_config:
+          type: object
+          additionalProperties: true
+        is_active:
+          type: boolean
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScenarioDeviceConfig'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
